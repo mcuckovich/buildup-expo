@@ -1,13 +1,16 @@
 {
   "expo": {
-    "scheme": "acme",
+    "scheme": "buildup-steam",
     "web": {
       "bundler": "metro"
     },
-    "plugins": [
-      "expo-router"
-    ],
-    "name": "mobile",
-    "slug": "mobile"
+    "plugins": ["expo-router"],
+    "name": "Buildup STEAM",
+    "slug": "buildup-steam",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.buildup-steam.app",
+      "supportsTablet": true
+    }
   }
 }

@@ -1,5 +1,4 @@
-import React from "react";
-import { useContext, useMemo } from "react";
+import React, { useContext, useMemo } from "react";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import {
   View,
@@ -8,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Text,
+  useWindowDimensions,
 } from "react-native";
 import { BuildsContext } from "../BuildsContext";
 
@@ -16,6 +16,7 @@ const GalleryScreen = () => {
   const navigation = useNavigation();
   const { builds } = useContext(BuildsContext);
   const { buildId } = route.params;
+  const windowWidth = useWindowDimensions().width;
 
   const build = useMemo(() => {
     return builds.find((item) => item._id === buildId);
@@ -28,13 +29,38 @@ const GalleryScreen = () => {
     });
   };
 
+  const getBorderColor = (kitColor) => {
+    switch (kitColor) {
+      case "Purple":
+        return "#911F7B";
+      case "Yellow":
+        return "#EFC20E";
+      case "Red":
+        return "#E64B3B";
+      case "Orange":
+        return "#E9832F";
+      case "Green":
+        return "#A4CB3A";
+      case "Blue":
+        return "#2365A1";
+      default:
+        return "#ddd";
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.galleryContainer}>
         {build.images.map((image, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.card}
+            style={[
+              styles.card,
+              {
+                width: windowWidth / 4 - 12.5,
+                borderColor: getBorderColor(build.kitColor),
+              },
+            ]}
             onPress={() => handleImagePress(index)}
           >
             <View style={styles.imageContainer}>
@@ -57,31 +83,30 @@ const GalleryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
     backgroundColor: "#fff",
+    paddingHorizontal: 5,
+    paddingTop: 5,
   },
   galleryContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   card: {
-    width: "22%",
-    margin: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    margin: 5,
+    borderWidth: 3,
     borderRadius: 8,
     overflow: "hidden",
     position: "relative",
   },
   imageContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
+    width: "100%",
+    height: 150, // Adjust the height as needed
+    overflow: "hidden",
   },
   image: {
     width: "100%",
-    height: 150, // Adjust the height as needed
+    height: "100%",
   },
   indexContainer: {
     position: "absolute",

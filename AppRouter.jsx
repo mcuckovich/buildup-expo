@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { TouchableOpacity, Text, View } from "react-native";
+import { TouchableOpacity, Text, View, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { Asset } from "expo-asset";
+import { BuildsContext } from "./BuildsContext";
 
 // Import your screen components here
 import HomeScreen from "./screens/HomeScreen";
@@ -12,70 +14,34 @@ import SettingsScreen from "./screens/SettingsScreen";
 const Stack = createStackNavigator();
 
 const AppRouter = () => {
+  const { builds } = useContext(BuildsContext);
   const navigation = useNavigation();
-  const [isClicked, setIsClicked] = useState(false);
-
-  const toggleClicked = () => {
-    setIsClicked((prevState) => !prevState);
-  };
+  const icon = Asset.fromModule(require("./assets/icon.png"));
 
   const handleSettingsClick = () => {
-    setIsClicked(false);
     navigation.navigate("Settings");
   };
 
-  const handleOptionClick = () => {
-    setIsClicked(false);
-  };
-
-  const HamburgerIcon = () => (
-    <TouchableOpacity onPress={toggleClicked}>
-      <Text style={{ fontSize: 24, marginRight: 20 }}>
-        {isClicked ? "✕" : "☰"}
-      </Text>
-    </TouchableOpacity>
-  );
-
   return (
     <Stack.Navigator
-      screenOptions={{
-        headerRight: () => (
-          <View style={{ marginRight: 10 }}>
-            <HamburgerIcon />
-            {isClicked && (
-              <View
-                style={{
-                  position: "absolute",
-                  backgroundColor: "white",
-                  top: 60,
-                  right: 10,
-                  padding: 10,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: "black",
-                  zIndex: 1,
-                }}
-              >
+      screenOptions={({ route }) => ({
+        headerTitle: () => (
+          <TouchableOpacity onPress={() => navigation.navigate("Builds")}>
+            <Image source={icon} style={{ width: 50, height: 50 }} />
+          </TouchableOpacity>
+        ),
+        headerRight: () => {
+          if (route.name !== "Settings" && builds.length) {
+            return (
+              <View style={{ marginRight: 10 }}>
                 <TouchableOpacity onPress={handleSettingsClick}>
-                  <Text style={{ fontSize: 20, marginVertical: 10 }}>
-                    Settings
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleOptionClick}>
-                  <Text style={{ fontSize: 20, marginVertical: 10 }}>
-                    Request Parts
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleOptionClick}>
-                  <Text style={{ fontSize: 20, marginVertical: 10 }}>
-                    Survey
-                  </Text>
+                  <Text style={{ fontSize: 24 }}>⚙</Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </View>
-        ),
-      }}
+            );
+          }
+        },
+      })}
     >
       <Stack.Screen name="Builds" component={HomeScreen} />
       <Stack.Screen name="Gallery" component={GalleryScreen} />

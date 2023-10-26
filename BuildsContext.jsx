@@ -8,78 +8,106 @@ const BuildsProvider = ({ children }) => {
   const [builds, setBuilds] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const downloadImages = async (buildId) => {
-    try {
-      const buildsResponse = await getBuilds();
-      const targetBuildIndex = buildsResponse.findIndex(
-        (build) => build._id === buildId
-      );
-      if (targetBuildIndex !== -1) {
-        const targetBuild = buildsResponse[targetBuildIndex];
-        const updatedImages = [];
-
-        // Create a map to store the downloaded images in the same order as the original array.
-        const downloadedImagesMap = new Map();
-
-        // Iterate over the images in the target build and download them.
-        await Promise.all(
-          targetBuild.images.map(async (image, index) => {
-            try {
-              // Download the image.
-              const downloadedImage = await FileSystem.downloadAsync(
-                image,
-                `${FileSystem.documentDirectory}${targetBuild.title}${index}`
-              );
-
-              // Add the downloaded image to the map.
-              downloadedImagesMap.set(index, downloadedImage.uri);
-            } catch (error) {
-              console.error("Error downloading image:", error);
-            }
-          })
-        );
-
-        // Iterate over the downloaded images map and add them to the updated images array.
-        for (const [index, uri] of downloadedImagesMap) {
-          updatedImages[index] = uri;
-        }
-
-        setBuilds((prev) => {
-          const prevBuildIndex = prev.findIndex(
-            (item) => item._id === targetBuild._id
-          );
-          return [
-            ...prev.slice(0, prevBuildIndex),
-            { ...targetBuild, images: updatedImages, downloaded: true },
-            ...prev.slice(prevBuildIndex + 1),
-          ];
-        });
-      }
-    } catch (error) {
-      console.error("Error in downloadImages:", error);
-    }
-  };
+  // Move the buildsFilePath variable to the top of the component.
+  const buildsFilePath = `${FileSystem.documentDirectory}builds.json`;
 
   useEffect(() => {
     if (!isLoaded) {
-      const fetchBuildsAsync = async () => {
-        try {
-          const fetchedBuilds = await getBuilds();
-          setBuilds(fetchedBuilds);
-          setIsLoaded(true);
-        } catch (error) {
-          console.error("Error fetching builds:", error);
-        }
-      };
-
-      fetchBuildsAsync();
+      checkDownloadedImages();
     }
   }, [isLoaded]);
+
+  const downloadAndSaveBuilds = async () => {
+    // Get the builds from the server.
+    const fetchedBuilds = await getBuilds();
+
+    // Create a new variable to store the updated builds.
+    const updatedBuilds = [];
+
+    // Map over the fetched builds and download the images.
+    await Promise.all(
+      fetchedBuilds.map(async (build) => {
+        // Download the images for the build.
+        const downloadedImages = await Promise.all(
+          build.images.map(async (image, index) => {
+            const downloadedImage = await FileSystem.downloadAsync(
+              image,
+              `${FileSystem.documentDirectory}${build.title}${index}`
+            );
+            return downloadedImage.uri;
+          })
+        );
+
+        // Update the build's images property with the downloaded images.
+        build.images = downloadedImages;
+
+        // Add the updated build to the updatedBuilds array.
+        updatedBuilds.push(build);
+      })
+    );
+
+    // Set the visibility property of each build.
+    updatedBuilds.forEach((build) => {
+      build.visibility = true;
+    });
+
+    // Sort the updated builds array by the order in which they were fetched.
+    updatedBuilds.sort((a, b) => {
+      return fetchedBuilds.indexOf(a) - fetchedBuilds.indexOf(b);
+    });
+
+    // Save the builds to the builds.json file.
+    const buildsJson = JSON.stringify(updatedBuilds);
+    await FileSystem.writeAsStringAsync(buildsFilePath, buildsJson);
+    setBuilds(updatedBuilds);
+    setIsLoaded(true);
+  };
+
+  const checkDownloadedImages = async () => {
+    try {
+      // Get the builds from the builds.json file.
+      if ((await FileSystem.getInfoAsync(buildsFilePath)).exists) {
+        const buildsJson = await FileSystem.readAsStringAsync(buildsFilePath);
+        const builds = JSON.parse(buildsJson);
+
+        // Set the builds state.
+        setBuilds(builds);
+        setIsLoaded(true);
+      } else {
+        await downloadAndSaveBuilds();
+      }
+    } catch (error) {
+      // If the builds.json file does not exist or cannot be read, download the builds from the server.
+      console.error("Error reading builds from filesystem:", error);
+    }
+  };
+
+  const toggleVisibility = async (kitColor) => {
+    const updatedBuilds = builds.map((item) =>
+      item.kitColor === kitColor
+        ? {
+            ...item,
+            visibility: !item.visibility,
+          }
+        : item
+    );
+
+    setBuilds(updatedBuilds);
+
+    // Save the updated builds to the builds.json file.
+    const buildsJson = JSON.stringify(updatedBuilds);
+    try {
+      await FileSystem.writeAsStringAsync(buildsFilePath, buildsJson);
+    } catch (error) {
+      console.error("Error writing updated builds to filesystem:", error);
+    }
+  };
 
   const value = {
     builds,
     isLoaded,
-    downloadImages,
+    toggleVisibility,
+    downloadAndSaveBuilds,
   };
 
   return (

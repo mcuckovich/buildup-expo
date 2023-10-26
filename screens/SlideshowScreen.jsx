@@ -71,6 +71,9 @@ const SlideshowScreen = ({ route }) => {
     transform: [{ translateX: animation }],
   };
 
+  const currentBuild = builds.find((build) => build._id === buildId);
+  const kitColor = currentBuild ? currentBuild.kitColor : "Purple";
+
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
       {images.map((image, index) => {
@@ -85,13 +88,37 @@ const SlideshowScreen = ({ route }) => {
           );
         }
       })}
-      <View style={styles.slideNumberContainer}>
+      <View
+        style={[
+          styles.slideNumberContainer,
+          { backgroundColor: getBackgroundColor(kitColor) },
+        ]}
+      >
         <Text style={styles.slideNumberText}>
           {currentIndex + 1} / {images.length}
         </Text>
       </View>
     </View>
   );
+};
+
+const getBackgroundColor = (kitColor) => {
+  switch (kitColor) {
+    case "Purple":
+      return "#911F7B";
+    case "Yellow":
+      return "#EFC20E";
+    case "Red":
+      return "#E64B3B";
+    case "Orange":
+      return "#E9832F";
+    case "Green":
+      return "#A4CB3A";
+    case "Blue":
+      return "#2365A1";
+    default:
+      return "rgba(0, 0, 0, 0.6)";
+  }
 };
 
 const styles = StyleSheet.create({
@@ -113,7 +140,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     alignSelf: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
