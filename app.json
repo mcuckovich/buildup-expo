@@ -10,7 +10,23 @@
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.buildup-steam.app",
-      "supportsTablet": true
-    }
+      "supportsTablet": true,
+      "buildNumber": "7"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "04432bc7-6ed2-4319-bced-41c9bb8ee0e4"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/04432bc7-6ed2-4319-bced-41c9bb8ee0e4"
+    },
+    "android": {}
   }
 }

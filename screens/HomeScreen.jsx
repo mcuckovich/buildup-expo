@@ -10,14 +10,13 @@ import {
   useWindowDimensions,
   ActivityIndicator,
 } from "react-native";
-import { Asset } from "expo-asset";
 import { useNavigation } from "@react-navigation/native";
+import BigLogo from "../assets/bigLogo.svg";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const { builds, isLoaded } = useContext(BuildsContext);
   const windowWidth = useWindowDimensions().width;
-  const image = Asset.fromModule(require("../assets/blue-text-logo.png"));
 
   const buildsMemo = useMemo(() => {
     return builds.filter((item) => item.visibility);
@@ -27,7 +26,7 @@ const HomeScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
-          <Image source={image} style={styles.logo} />
+          <BigLogo width={350} height={350} />
           <ActivityIndicator size="large" color="#0000ff" />
           <Text style={{ marginTop: 10 }}>Downloading builds.</Text>
           <Text style={{ marginTop: 10 }}>This may take a few minutes.</Text>
@@ -74,7 +73,7 @@ const HomeScreen = () => {
         <Image
           style={styles.image}
           source={{ uri: item.images[0] }}
-          resizeMode="cover"
+          resizeMode="contain"
         />
         <View
           style={[styles.textContainer, { backgroundColor: backgroundColor }]}
@@ -112,11 +111,6 @@ const styles = StyleSheet.create({
     padding: 40,
     borderRadius: 10,
     alignItems: "center", // center the content horizontally
-  },
-  logo: {
-    width: 350, // adjust the width as needed
-    height: 350, // set a fixed height for the logo
-    resizeMode: "contain", // adjust the image size to fit within the set dimensions
   },
   card: {
     borderWidth: 1,

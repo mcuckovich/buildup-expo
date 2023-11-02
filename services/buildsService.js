@@ -1,7 +1,10 @@
 import axios from "axios";
 
-const baseUrl = process.env.EXPO_PUBLIC_API_URL;
 export const getBuilds = async () => {
-  const results = (await axios.get(`${baseUrl}/builds`)).data;
+  const results = (
+    await axios.get(
+      `https://us-central1-buildup-steam.cloudfunctions.net/api/builds`
+    )
+  ).data;
   return results;
 };

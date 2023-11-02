@@ -17,6 +17,7 @@ const GalleryScreen = () => {
   const { builds } = useContext(BuildsContext);
   const { buildId } = route.params;
   const windowWidth = useWindowDimensions().width;
+  const isLargeScreen = windowWidth > 768; // Adjust the threshold for large screens
 
   const build = useMemo(() => {
     return builds.find((item) => item._id === buildId);
@@ -48,17 +49,26 @@ const GalleryScreen = () => {
     }
   };
 
+  // Define the number of columns dynamically based on the screen width
+  const numColumns = isLargeScreen ? 4 : 2;
+
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.galleryContainer}>
+      <ScrollView
+        contentContainerStyle={{
+          ...styles.galleryContainer,
+        }}
+      >
         {build.images.map((image, index) => (
           <TouchableOpacity
             key={index}
             style={[
               styles.card,
+              { borderColor: getBorderColor(build.kitColor) },
               {
-                width: windowWidth / 4 - 12.5,
-                borderColor: getBorderColor(build.kitColor),
+                ...(isLargeScreen
+                  ? { width: windowWidth / numColumns - 12.5 }
+                  : { width: windowWidth / numColumns - 15 }),
               },
             ]}
             onPress={() => handleImagePress(index)}
