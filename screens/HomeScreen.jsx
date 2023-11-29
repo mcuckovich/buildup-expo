@@ -15,12 +15,22 @@ import BigLogo from "../assets/bigLogo.svg";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const { builds, isLoaded } = useContext(BuildsContext);
+  const { builds, isLoaded, showAllBuilds } = useContext(BuildsContext);
   const windowWidth = useWindowDimensions().width;
 
   const buildsMemo = useMemo(() => {
-    return builds.filter((item) => item.visibility);
-  }, [builds]);
+    return builds.filter((item) => {
+      if (item.visibility) {
+        if (showAllBuilds) {
+          return item;
+        } else {
+          if (item.default) {
+            return item;
+          }
+        }
+      }
+    });
+  }, [builds, showAllBuilds]);
 
   if (!isLoaded) {
     return (

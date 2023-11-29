@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
+import { getHospitals } from "./services/hospitalsService";
 import { getBuilds } from "./services/buildsService";
 import * as FileSystem from "expo-file-system";
 
@@ -7,13 +8,23 @@ const BuildsContext = createContext();
 const BuildsProvider = ({ children }) => {
   const [builds, setBuilds] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showAllBuilds, setShowAllBuilds] = useState(false);
+  const [hospitals, setHospitals] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      setHospitals(await getHospitals());
+    })();
+  }, []);
 
   // Move the buildsFilePath variable to the top of the component.
   const buildsFilePath = `${FileSystem.documentDirectory}builds.json`;
+  const showAllBuildsFilePath = `${FileSystem.documentDirectory}showAllBuilds.json`;
 
   useEffect(() => {
     if (!isLoaded) {
       checkDownloadedImages();
+      checkShowAllBuildsPreference();
     }
   }, [isLoaded]);
 
@@ -103,11 +114,54 @@ const BuildsProvider = ({ children }) => {
     }
   };
 
+  const toggleShowAllBuilds = async () => {
+    const updatedShowAllBuilds = !showAllBuilds;
+
+    // Save the updated showAllBuilds preference to the file system
+    const showAllBuildsJson = JSON.stringify(updatedShowAllBuilds);
+    await FileSystem.writeAsStringAsync(
+      showAllBuildsFilePath,
+      showAllBuildsJson
+    );
+
+    setShowAllBuilds(updatedShowAllBuilds);
+  };
+
+  const checkShowAllBuildsPreference = async () => {
+    try {
+      // Check if the showAllBuilds file exists
+      if ((await FileSystem.getInfoAsync(showAllBuildsFilePath)).exists) {
+        // Read the showAllBuilds preference from the file
+        const showAllBuildsJson = await FileSystem.readAsStringAsync(
+          showAllBuildsFilePath
+        );
+        const parsedShowAllBuilds = JSON.parse(showAllBuildsJson);
+
+        // Set the showAllBuilds state
+        setShowAllBuilds(parsedShowAllBuilds);
+      } else {
+        // Create the showAllBuilds file with the default value
+        const showAllBuildsJson = JSON.stringify(false);
+        await FileSystem.writeAsStringAsync(
+          showAllBuildsFilePath,
+          showAllBuildsJson
+        );
+      }
+    } catch (error) {
+      // If the showAllBuilds file cannot be read or created, use the default value
+      console.error("Error reading showAllBuilds preference:", error);
+      setShowAllBuilds(false);
+    }
+  };
+
   const value = {
     builds,
     isLoaded,
     toggleVisibility,
     downloadAndSaveBuilds,
+    toggleShowAllBuilds,
+    showAllBuilds,
+    hospitals,
   };
 
   return (

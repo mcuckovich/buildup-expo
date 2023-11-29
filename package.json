@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@expo/config-plugins": "^7.2.5",
+    "@react-native-picker/picker": "^2.5.1",
     "@react-navigation/stack": "^6.3.19",
     "axios": "^1.5.1",
     "expo": "^49.0.3",
@@ -29,6 +30,7 @@
     "react-native-screens": "~3.22.0",
     "react-native-svg": "13.9.0",
     "react-native-svg-transformer": "^1.1.0",
+    "react-native-vector-icons": "^10.0.2",
     "react-native-web": "^0.19.9"
   },
   "devDependencies": {
