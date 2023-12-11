@@ -2,10 +2,9 @@ import React, { useContext } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { TouchableOpacity, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { SafeAreaProvider } from "react-native-safe-area-context"; // Import SafeAreaProvider
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { BuildsContext } from "./BuildsContext";
-
-// Import your screen components here
+import PasswordScreen from "./screens/PasswordScreen";
 import HomeScreen from "./screens/HomeScreen";
 import GalleryScreen from "./screens/GalleryScreen";
 import SlideshowScreen from "./screens/SlideshowScreen";
@@ -15,12 +14,17 @@ import SmallLogo from "./assets/smallLogo.svg";
 const Stack = createStackNavigator();
 
 const AppRouter = () => {
-  const { builds } = useContext(BuildsContext);
+  const { builds, access } = useContext(BuildsContext);
   const navigation = useNavigation();
 
   const handleSettingsClick = () => {
     navigation.navigate("Settings");
   };
+
+  if (!access) {
+    // Render only the PasswordScreen if access is not true
+    return <PasswordScreen />;
+  }
 
   return (
     <SafeAreaProvider>

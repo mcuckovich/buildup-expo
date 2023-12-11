@@ -6,22 +6,22 @@ import {
   Image,
   Text,
   Animated,
-  useWindowDimensions,
 } from "react-native";
 import { BuildsContext } from "../BuildsContext";
 
 const SlideshowScreen = ({ route }) => {
-  const { builds } = useContext(BuildsContext);
+  const { builds, windowWidth } = useContext(BuildsContext);
   const { buildId, startIndex } = route.params;
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const animation = useRef(new Animated.Value(0)).current;
-  const windowWidth = useWindowDimensions().width;
   const SWIPE_THRESHOLD = 50;
 
   const images = useMemo(() => {
     const build = builds.find((item) => item._id === buildId);
     return build ? build.images : [];
   }, [builds, buildId]);
+
+  const currentBuild = builds.find((build) => build._id === buildId);
 
   const panResponder = PanResponder.create({
     onMoveShouldSetPanResponder: () => true,
@@ -51,7 +51,7 @@ const SlideshowScreen = ({ route }) => {
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
-      setCurrentIndex((prevIndex) => prevIndex - 1);
+      setCurrentIndex((prevIndex) => Math.max(prevIndex - 1, 0));
       animation.setValue(0);
     });
   };
@@ -62,36 +62,45 @@ const SlideshowScreen = ({ route }) => {
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
-      setCurrentIndex((prevIndex) => prevIndex + 1);
+      setCurrentIndex((prevIndex) =>
+        Math.min(prevIndex + 1, images.length - 1)
+      );
       animation.setValue(0);
     });
+  };
+
+  const getBuildAtIndex = (index) => {
+    const build = builds.find((item) => item._id === buildId);
+    return build ? build.images[index] : null;
   };
 
   const animatedStyle = {
     transform: [{ translateX: animation }],
   };
 
-  const currentBuild = builds.find((build) => build._id === buildId);
-  const kitColor = currentBuild ? currentBuild.kitColor : "Purple";
-
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
-      {images.map((image, index) => {
-        if (index === currentIndex) {
-          return (
-            <Animated.View
-              key={index}
-              style={[styles.imageContainer, animatedStyle]}
-            >
-              <Image source={{ uri: image }} style={styles.image} />
-            </Animated.View>
-          );
-        }
+      {[-1, 0, 1].map((offset) => {
+        const buildIndex = currentIndex + offset;
+        const build = getBuildAtIndex(buildIndex);
+
+        return (
+          <Animated.View
+            key={buildIndex}
+            style={[
+              styles.imageContainer,
+              animatedStyle,
+              { left: windowWidth * offset },
+            ]}
+          >
+            {build && <Image source={{ uri: build }} style={styles.image} />}
+          </Animated.View>
+        );
       })}
       <View
         style={[
           styles.slideNumberContainer,
-          { backgroundColor: getBackgroundColor(kitColor) },
+          { backgroundColor: getBackgroundColor(currentBuild?.kitColor) },
         ]}
       >
         <Text style={styles.slideNumberText}>

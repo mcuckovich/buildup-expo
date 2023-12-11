@@ -1,32 +1,32 @@
 import React, { createContext, useState, useEffect } from "react";
-import { getHospitals } from "./services/hospitalsService";
 import { getBuilds } from "./services/buildsService";
 import * as FileSystem from "expo-file-system";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWindowDimensions } from "react-native";
 
 const BuildsContext = createContext();
 
+const buildsFilePath = `${FileSystem.documentDirectory}builds.json`;
+const showAllBuildsFilePath = `${FileSystem.documentDirectory}showAllBuilds.json`;
+const accessFilePath = `${FileSystem.documentDirectory}access.json`;
+
 const BuildsProvider = ({ children }) => {
+  const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const [builds, setBuilds] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showAllBuilds, setShowAllBuilds] = useState(false);
-  const [hospitals, setHospitals] = useState([]);
+  const [access, setAccess] = useState(false);
 
   useEffect(() => {
+    checkAccess();
     (async () => {
-      setHospitals(await getHospitals());
+      if (!isLoaded && access) {
+        checkDownloadedImages();
+        checkShowAllBuildsPreference();
+      }
     })();
-  }, []);
-
-  // Move the buildsFilePath variable to the top of the component.
-  const buildsFilePath = `${FileSystem.documentDirectory}builds.json`;
-  const showAllBuildsFilePath = `${FileSystem.documentDirectory}showAllBuilds.json`;
-
-  useEffect(() => {
-    if (!isLoaded) {
-      checkDownloadedImages();
-      checkShowAllBuildsPreference();
-    }
-  }, [isLoaded]);
+  }, [isLoaded, access]);
 
   const downloadAndSaveBuilds = async () => {
     // Get the builds from the server.
@@ -154,6 +154,34 @@ const BuildsProvider = ({ children }) => {
     }
   };
 
+  const checkAccess = async () => {
+    try {
+      // Check if the access file exists
+      if ((await FileSystem.getInfoAsync(accessFilePath)).exists) {
+        // Read the access preference from the file
+        const accessJson = await FileSystem.readAsStringAsync(accessFilePath);
+        const parsedAccess = JSON.parse(accessJson);
+
+        // Set the access state
+        setAccess(parsedAccess);
+      } else {
+        // Create the access file with the default value
+        const accessJson = JSON.stringify(false);
+        await FileSystem.writeAsStringAsync(accessFilePath, accessJson);
+      }
+    } catch (error) {
+      // If the access file cannot be read or created, use the default value
+      console.error("Error reading access preference:", error);
+      setAccess(false);
+    }
+  };
+
+  const grantAccess = async () => {
+    const accessJson = JSON.stringify(true);
+    await FileSystem.writeAsStringAsync(accessFilePath, accessJson);
+    setAccess(accessJson);
+  };
+
   const value = {
     builds,
     isLoaded,
@@ -161,7 +189,10 @@ const BuildsProvider = ({ children }) => {
     downloadAndSaveBuilds,
     toggleShowAllBuilds,
     showAllBuilds,
-    hospitals,
+    access,
+    grantAccess,
+    insets,
+    windowWidth,
   };
 
   return (

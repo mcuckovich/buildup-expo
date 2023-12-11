@@ -1,22 +1,22 @@
 import React, { useMemo, useContext } from "react";
-import { BuildsContext } from "../BuildsContext";
 import {
   Text,
   Image,
   StyleSheet,
-  FlatList,
   View,
   TouchableOpacity,
-  useWindowDimensions,
+  ScrollView,
   ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import BigLogo from "../assets/bigLogo.svg";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { BuildsContext } from "../BuildsContext";
 
 const HomeScreen = () => {
+  const { builds, isLoaded, showAllBuilds, insets, windowWidth } =
+    useContext(BuildsContext);
   const navigation = useNavigation();
-  const { builds, isLoaded, showAllBuilds } = useContext(BuildsContext);
-  const windowWidth = useWindowDimensions().width;
 
   const buildsMemo = useMemo(() => {
     return builds.filter((item) => {
@@ -32,11 +32,12 @@ const HomeScreen = () => {
     });
   }, [builds, showAllBuilds]);
 
+  // Check if the builds have finished downloading
   if (!isLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
-          <BigLogo width={350} height={350} />
+          <BigLogo width={150} height={150} />
           <ActivityIndicator size="large" color="#0000ff" />
           <Text style={{ marginTop: 10 }}>Downloading builds.</Text>
           <Text style={{ marginTop: 10 }}>This may take a few minutes.</Text>
@@ -45,71 +46,83 @@ const HomeScreen = () => {
     );
   }
 
+  // Display the builds if they have finished downloading
   const navigateToGallery = (buildId) => {
     navigation.navigate("Gallery", { buildId });
   };
 
-  const renderBuildItem = ({ item }) => {
-    let backgroundColor = "#fff"; // default background color
-
-    switch (item.kitColor) {
-      case "Purple":
-        backgroundColor = "#911F7B";
-        break;
-      case "Yellow":
-        backgroundColor = "#EFC20E";
-        break;
-      case "Red":
-        backgroundColor = "#E64B3B";
-        break;
-      case "Orange":
-        backgroundColor = "#E9832F";
-        break;
-      case "Green":
-        backgroundColor = "#A4CB3A";
-        break;
-      case "Blue":
-        backgroundColor = "#2365A1";
-        break;
-      default:
-        backgroundColor = "#fff";
-    }
-
-    return (
-      <TouchableOpacity
-        style={[styles.card, { width: windowWidth / 2 - 15 }]}
-        onPress={() => navigateToGallery(item._id)}
-      >
-        <Image
-          style={styles.image}
-          source={{ uri: item.images[0] }}
-          resizeMode="contain"
-        />
-        <View
-          style={[styles.textContainer, { backgroundColor: backgroundColor }]}
-        >
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.kitColor}>{item.kitColor}</Text>
-        </View>
-      </TouchableOpacity>
-    );
+  const calculateCardWidth = () => {
+    return (windowWidth - insets.left - insets.right) / 2 - 15;
   };
 
   return (
-    <FlatList
-      data={buildsMemo}
-      renderItem={renderBuildItem}
-      keyExtractor={(item) => item._id}
-      numColumns={2}
-      contentContainerStyle={styles.list}
-    />
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.list}>
+          {buildsMemo.map((item) => {
+            let backgroundColor = "#fff";
+
+            switch (item.kitColor) {
+              case "Purple":
+                backgroundColor = "#911F7B";
+                break;
+              case "Yellow":
+                backgroundColor = "#EFC20E";
+                break;
+              case "Red":
+                backgroundColor = "#E64B3B";
+                break;
+              case "Orange":
+                backgroundColor = "#E9832F";
+                break;
+              case "Green":
+                backgroundColor = "#A4CB3A";
+                break;
+              case "Blue":
+                backgroundColor = "#2365A1";
+                break;
+              default:
+                backgroundColor = "#fff";
+            }
+
+            return (
+              <TouchableOpacity
+                key={item._id}
+                style={[
+                  styles.card,
+                  { width: calculateCardWidth(), margin: 5 },
+                ]}
+                onPress={() => navigateToGallery(item._id)}
+              >
+                <Image
+                  style={styles.image}
+                  source={{ uri: item.images[0] }}
+                  resizeMode="contain"
+                />
+                <View style={[styles.textContainer, { backgroundColor }]}>
+                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={styles.kitColor}>{item.kitColor}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
   list: {
-    paddingHorizontal: 5,
-    paddingTop: 5,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    padding: 5,
   },
   loadingContainer: {
     flex: 1,
@@ -117,17 +130,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingContent: {
-    backgroundColor: "white",
+    backgroundColor: "#fff",
     padding: 40,
     borderRadius: 10,
-    alignItems: "center", // center the content horizontally
+    alignItems: "center",
   },
   card: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
-    margin: 5,
-    backgroundColor: "white",
+    backgroundColor: "#fff",
+    marginBottom: 10,
   },
   image: {
     borderTopLeftRadius: 8,

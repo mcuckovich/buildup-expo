@@ -1,9 +1,6 @@
 {
   "expo": {
     "scheme": "buildup-steam",
-    "web": {
-      "bundler": "metro"
-    },
     "plugins": ["expo-router"],
     "name": "Buildup STEAM",
     "slug": "buildup-steam",
@@ -11,7 +8,7 @@
     "ios": {
       "bundleIdentifier": "com.buildup-steam.app",
       "supportsTablet": true,
-      "buildNumber": "7"
+      "buildNumber": "16"
     },
     "extra": {
       "router": {
@@ -27,6 +24,7 @@
     "updates": {
       "url": "https://u.expo.dev/04432bc7-6ed2-4319-bced-41c9bb8ee0e4"
     },
-    "android": {}
+    "android": {},
+    "version": "1.0.3"
   }
 }

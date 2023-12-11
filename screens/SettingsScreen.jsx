@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import { Picker } from "@react-native-picker/picker";
 import { ScrollView } from "react-native-gesture-handler";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { addPartRequest } from "../services/partService";
+import * as MailComposer from "expo-mail-composer";
+import { getHospitals } from "../services/hospitalsService";
 
 const partColors = [
   "Black",
@@ -34,13 +36,13 @@ const partColors = [
 ];
 
 const SettingsScreen = () => {
+  const scrollViewRef = useRef();
   const {
     builds,
     toggleVisibility,
     downloadAndSaveBuilds,
     toggleShowAllBuilds,
     showAllBuilds,
-    hospitals,
   } = useContext(BuildsContext);
   const kitColors = ["Blue", "Green", "Orange", "Yellow", "Red", "Purple"];
   const [isDownloading, setIsDownloading] = useState(false);
@@ -49,6 +51,7 @@ const SettingsScreen = () => {
   const [hospital, setHospital] = useState("Select Hospital");
   const [selectedColor, setSelectedColor] = useState(null);
   const [isSubmitButtonVisible, setSubmitButtonVisible] = useState(false);
+  const [hospitals, setHospitals] = useState([]);
   const [parts, setParts] = useState(
     [
       {
@@ -1139,18 +1142,63 @@ const SettingsScreen = () => {
   };
 
   const handleFormSubmit = async () => {
-    // Filter parts to include only those with quantity greater than 0
-    const selectedParts = parts
-      .filter((part) => part.quantity > 0)
-      .map(({ id, quantity }) => ({ id, quantity }));
+    try {
+      // Filter parts to include only those with quantity greater than 0
+      const selectedParts = parts
+        .filter((part) => part.quantity > 0)
+        .map(({ id, quantity }) => ({ id, quantity }));
 
-    // Create the object with the required properties
-    const requestData = {
-      employee: name,
-      hospital,
-      parts: selectedParts,
-    };
-    await addPartRequest(requestData);
+      // Create the object with the required properties
+      const requestData = {
+        employee: name,
+        hospital,
+        parts: selectedParts,
+      };
+
+      const emailBody = `
+        Thank you ${name} for submitting your <a href="https://buildup-steam.web.app/requests" style="text-decoration: none; color: #0000EE;">request.</a>\n\n 
+        Please send this email as an additional way of notifying Buildup STEAM of your request.
+      `;
+
+      const emailResult = await MailComposer.composeAsync({
+        recipients: ["john@buildupsteam.org"],
+        subject: "Part Request [DO NOT EDIT]",
+        body: emailBody,
+        isHtml: true,
+      });
+
+      // Check if the email was sent successfully
+      if (emailResult.status === "sent") {
+        await addPartRequest(requestData);
+        setName("");
+        setHospital("Select Hospital");
+        setSelectedColor(null);
+        setParts((prevParts) =>
+          prevParts.map((part) => ({ ...part, quantity: 0 }))
+        );
+
+        // Scroll to the top
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ x: 0, y: 0, animated: true });
+        }
+
+        // Show popup
+        Alert.alert(
+          "Part(s) Requested",
+          "Your part request and email have been submitted successfully."
+        );
+      } else {
+        // Handle case where the user didn't send the email
+        Alert.alert(
+          "Email Cancelled",
+          "Please notify a Buildup STEAM employee about your request."
+        );
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      // Handle error, show alert, etc.
+      return;
+    }
   };
 
   const renderViewContent = () => {
@@ -1201,7 +1249,7 @@ const SettingsScreen = () => {
 
   const renderRequestContent = () => {
     return (
-      <ScrollView style={{ position: "relative" }}>
+      <ScrollView ref={scrollViewRef} style={{ position: "relative" }}>
         <View style={styles.formContainer}>
           <Text style={styles.label}>Requester Name:</Text>
           <TextInput
@@ -1209,10 +1257,16 @@ const SettingsScreen = () => {
             value={name}
             onChangeText={handleNameChange}
             placeholder="Enter your first name"
+            placeholderTextColor="#666"
           />
 
           <Text style={styles.label}>Hospital:</Text>
-          <Picker selectedValue={hospital} onValueChange={handleHospitalChange}>
+          <Picker
+            selectedValue={hospital}
+            onValueChange={handleHospitalChange}
+            style={styles.picker}
+            itemStyle={styles.pickerItem}
+          >
             <Picker.Item label="Select Hospital" value="Select Hospital" />
             {hospitals.map((item) => (
               <Picker.Item key={item} label={item} value={item} />
@@ -1223,6 +1277,8 @@ const SettingsScreen = () => {
           <Picker
             selectedValue={selectedColor}
             onValueChange={(itemValue) => setSelectedColor(itemValue)}
+            style={styles.picker}
+            itemStyle={styles.pickerItem}
           >
             <Picker.Item label="All Colors" value={null} />
             {partColors.map((color) => (
@@ -1232,7 +1288,7 @@ const SettingsScreen = () => {
 
           <Text style={styles.label}>Part Request</Text>
           {filteredParts.map((part) => (
-            <View key={part.id}>
+            <View key={part.id} style={styles.partContainer}>
               <Text style={styles.partLabel}>{part.name}</Text>
               <Image style={styles.partImage} source={part.picRef} />
               <View style={styles.quantityContainer}>
@@ -1241,7 +1297,7 @@ const SettingsScreen = () => {
                     handleQuantityChange(part.id, part.quantity - 1)
                   }
                 >
-                  <Icon name="caret-down" size={24} color="#000" />
+                  <Icon name="caret-down" size={50} color="#000" />
                 </TouchableOpacity>
                 <TextInput
                   keyboardType="numeric"
@@ -1256,7 +1312,7 @@ const SettingsScreen = () => {
                     handleQuantityChange(part.id, part.quantity + 1)
                   }
                 >
-                  <Icon name="caret-up" size={24} color="#000" />
+                  <Icon name="caret-up" size={50} color="#000" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1269,6 +1325,12 @@ const SettingsScreen = () => {
   useEffect(() => {
     updateSubmitButtonVisibility();
   }, [name, hospital, parts]);
+
+  useEffect(() => {
+    (async () => {
+      setHospitals(await getHospitals());
+    })();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -1347,10 +1409,35 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-
+  picker: {
+    width: 300,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginBottom: 10,
+    alignSelf: "center",
+  },
+  pickerItem: {
+    color: "#666",
+  },
   label: {
     fontWeight: "bold",
     marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    marginBottom: 10,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  partContainer: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    width: 300,
+    marginBottom: 10,
+    padding: 10,
+    alignSelf: "center",
   },
   partLabel: {
     fontSize: 18,
@@ -1361,7 +1448,6 @@ const styles = StyleSheet.create({
   partImage: {
     width: 150,
     resizeMode: "contain",
-    marginVertical: 10,
     alignSelf: "center",
   },
   quantityContainer: {
@@ -1370,23 +1456,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    marginBottom: 10,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
   quantityInput: {
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 10,
-    marginBottom: 10,
     fontWeight: "bold",
     textAlign: "center",
     width: 50, // Adjust the width as needed
-    marginHorizontal: 10,
+    marginHorizontal: 20,
   },
   floatingButton: {
     position: "absolute",

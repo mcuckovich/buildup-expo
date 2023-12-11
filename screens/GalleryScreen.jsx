@@ -1,5 +1,4 @@
 import React, { useContext, useMemo } from "react";
-import { useRoute, useNavigation } from "@react-navigation/native";
 import {
   View,
   StyleSheet,
@@ -7,103 +6,93 @@ import {
   TouchableOpacity,
   Image,
   Text,
-  useWindowDimensions,
 } from "react-native";
 import { BuildsContext } from "../BuildsContext";
+import { useNavigation, useRoute } from "@react-navigation/native";
+
+// Memoized Image component
+const MemoizedImage = React.memo(({ uri }) => (
+  <Image source={{ uri }} style={styles.image} resizeMode="contain" />
+));
+
+// Constants
+const LARGE_SCREEN_THRESHOLD = 768;
 
 const GalleryScreen = () => {
+  const { builds, insets, windowWidth } = useContext(BuildsContext);
   const route = useRoute();
   const navigation = useNavigation();
-  const { builds } = useContext(BuildsContext);
   const { buildId } = route.params;
-  const windowWidth = useWindowDimensions().width;
-  const isLargeScreen = windowWidth > 768; // Adjust the threshold for large screens
+  const isLargeScreen = windowWidth > LARGE_SCREEN_THRESHOLD;
 
-  const build = useMemo(() => {
-    return builds.find((item) => item._id === buildId);
-  }, [builds, buildId]);
+  const build = useMemo(
+    () => builds.find((item) => item._id === buildId),
+    [builds, buildId]
+  );
+
+  if (!build) {
+    // Handle the case where the build is not found
+    return <Text>Build not found</Text>;
+  }
+
+  const getBorderColor = useMemo(() => {
+    const colorMap = {
+      Purple: "#911F7B",
+      Yellow: "#EFC20E",
+      Red: "#E64B3B",
+      Orange: "#E9832F",
+      Green: "#A4CB3A",
+      Blue: "#2365A1",
+    };
+    return colorMap[build.kitColor] || "#ddd";
+  }, [build.kitColor]);
 
   const handleImagePress = (index) => {
     navigation.navigate("Slideshow", {
-      buildId: buildId,
+      buildId,
       startIndex: index,
     });
   };
 
-  const getBorderColor = (kitColor) => {
-    switch (kitColor) {
-      case "Purple":
-        return "#911F7B";
-      case "Yellow":
-        return "#EFC20E";
-      case "Red":
-        return "#E64B3B";
-      case "Orange":
-        return "#E9832F";
-      case "Green":
-        return "#A4CB3A";
-      case "Blue":
-        return "#2365A1";
-      default:
-        return "#ddd";
-    }
+  const calculateCardWidth = () => {
+    return isLargeScreen
+      ? (windowWidth - insets.left - insets.right) / 4 - 12.5
+      : (windowWidth - insets.left - insets.right) / 2 - 15;
   };
 
-  // Define the number of columns dynamically based on the screen width
-  const numColumns = isLargeScreen ? 4 : 2;
-
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={{
-          ...styles.galleryContainer,
-        }}
-      >
-        {build.images.map((image, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.card,
-              { borderColor: getBorderColor(build.kitColor) },
-              {
-                ...(isLargeScreen
-                  ? { width: windowWidth / numColumns - 12.5 }
-                  : { width: windowWidth / numColumns - 15 }),
-              },
-            ]}
-            onPress={() => handleImagePress(index)}
-          >
-            <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: image }}
-                style={styles.image}
-                resizeMode="contain"
-              />
-            </View>
-            <View style={styles.indexContainer}>
-              <Text style={styles.indexIndicator}>{index + 1}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      {build.images.map((item, index) => (
+        <TouchableOpacity
+          key={`${index}`}
+          style={{
+            ...styles.card,
+            borderColor: getBorderColor,
+            width: calculateCardWidth(),
+            margin: 5,
+          }}
+          onPress={() => handleImagePress(index)}
+        >
+          <View style={styles.imageContainer}>
+            <MemoizedImage uri={item} />
+          </View>
+          <View style={styles.indexContainer}>
+            <Text style={styles.indexIndicator}>{index + 1}</Text>
+          </View>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 5,
-    paddingTop: 5,
-  },
-  galleryContainer: {
+    padding: 5,
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "flex-start",
   },
   card: {
-    margin: 5,
+    backgroundColor: "#fff",
     borderWidth: 3,
     borderRadius: 8,
     overflow: "hidden",
@@ -111,7 +100,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: "100%",
-    height: 150, // Adjust the height as needed
+    height: 150,
     overflow: "hidden",
   },
   image: {
